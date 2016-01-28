@@ -1,0 +1,13 @@
+
+Group collapse
+* Figure out how to collapse groups
+
+Labeling
+* Figure out how to have short groupname labels
+* Figure out how to have short quadrant labels
+* If groups are collapsed,
+	* use groupname for labels
+	* use fill alpha for group
+
+Ordering
+* Figure out how to order series by specified order

@@ -14,6 +14,8 @@
 #' @param group.col the column name in \code{df} to use for grouping.
 #' @param start.col the column name in \code{df} that specifies the start date.
 #' @param end.col the column name in \code{df} that specifies the end date.
+#' @param color.by the column to use for color grouping
+#' @param color.palette the color palette to use
 #' @param text.size the text size for labels in \code{df}.
 #' @param text.color the text color for labels in \code{df}.
 #' @param text.position the positioning of the text (i.e. left, right, or center).
@@ -62,8 +64,9 @@ timeline <- function(df, events,
 					 group.col = names(df)[2],
 					 start.col = names(df)[3],
 					 end.col = names(df)[4],
-			#		 color.data = df[,5],
 					 color.col = names(df)[5],
+					 color.by = label.col,
+					 color.palette = rainbow(length(levels(as.factor(df[,color.by])))),
 					 text.position = c('left','right','center'),
 					 text.size = 4,
 					 text.color = 'black',
@@ -99,6 +102,15 @@ timeline <- function(df, events,
 ) {	
 	p <- ggplot()
 	
+	# Make some pretty colors
+	if(missing(color.col)){
+	   color.col = 5
+	   df[,color.col]=mapvalues(df[,color.by], 
+	                            from=levels(as.factor(df[,color.by])), 
+	                            to=color.palette)
+	}
+	
+	# Set up events line
 	if(!missing(events)) {
 		if(missing(event.label.col)) {
 			event.label.col <- names(events)[1]
@@ -113,6 +125,7 @@ timeline <- function(df, events,
 		event.spots <- 0
 	}
 	
+	# Set up limits if they're not specified
 	if(missing(limits)) {
 		if(missing(events)) {
 			limits <- range(c(df[,start.col], df[,end.col]), na.rm=TRUE)
@@ -123,7 +136,6 @@ timeline <- function(df, events,
 		}
 	}
 	
-	groups <- unique(df[,group.col])
 	
 	# Set horizontal limits depending on time scaling.
 	if(missing(time.scale)) {
@@ -139,6 +151,9 @@ timeline <- function(df, events,
 	   }
 	}
 
+	# Grouping and vertical limits
+	groups <- unique(df[,group.col])
+	
 	ymin <- 0
 	ymax <- length(groups)
 	
@@ -202,12 +217,12 @@ timeline <- function(df, events,
 		
 	}
 	
+
+	
 	p <- p +
 		geom_rect(data=df, aes_string(xmin=start.col, xmax=end.col,
-		     #     ymin='ymin', ymax='ymax', fill=color.col), alpha=.9, 
-		           ymin='ymin', ymax='ymax'),fill=df[,color.col], alpha=1, 
+		        ymin='ymin', ymax='ymax'),fill=df[,color.col], alpha=.9, 
 				  color=border.color, linetype=border.linetype) +
-				# color=color.col, linetype=border.linetype) +
 		geom_text(data=df, aes_string(y='labelpos', x='labelpos.x', label=label.col),
 		          hjust=text.hjust, 
 		          angle= text.angle, 
