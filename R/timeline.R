@@ -50,6 +50,7 @@
 #' @param border.color the color of the border around each box.
 #' @param border.linetype the linetype of the border around each box.
 #' @param limits the limits of the y-axis.
+#' @param time.scale maximum to scale time to.  No scaling if missing.
 #' @param ... currently unused.
 #' @export
 #' @examples
@@ -58,10 +59,11 @@
 #' timeline(ww2, ww2.events, event.spots=2, event.label='', event.above=FALSE)
 timeline <- function(df, events,
 					 label.col = names(df)[1],
-					 color.col = names(df)[1],
 					 group.col = names(df)[2],
 					 start.col = names(df)[3],
 					 end.col = names(df)[4],
+			#		 color.data = df[,5],
+					 color.col = names(df)[5],
 					 text.position = c('left','right','center'),
 					 text.size = 4,
 					 text.color = 'black',
@@ -92,10 +94,11 @@ timeline <- function(df, events,
 					 border.color='white',
 					 border.linetype=1,
 					 limits,
+			       time.scale,
 					 ...
 ) {	
 	p <- ggplot()
-
+	
 	if(!missing(events)) {
 		if(missing(event.label.col)) {
 			event.label.col <- names(events)[1]
@@ -121,9 +124,21 @@ timeline <- function(df, events,
 	}
 	
 	groups <- unique(df[,group.col])
-	xmin <- limits[1]
-	xmax <- limits[2]
 	
+	# Set horizontal limits depending on time scaling.
+	if(missing(time.scale)) {
+	   xmin <- limits[1]
+	   xmax <- limits[2]
+	} else {
+	   xmin <- 0
+	   xmax <- time.scale
+	   df[, start.col] <- (df[,start.col]-limits[1])*time.scale/limits[2]
+	   df[, end.col] <- (df[,end.col]-limits[1])*time.scale/limits[2]
+	   if(!missing(events)) {
+	      events[,event.col] <- (events[,event.col]-limits[1])*time.scale/limits[2]
+	   }
+	}
+
 	ymin <- 0
 	ymax <- length(groups)
 	
@@ -174,7 +189,7 @@ timeline <- function(df, events,
 	group.labels <- rbind(group.labels, data.frame(group=event.label, x=xmin, 
 							y=ifelse(event.above, ymax + 1, 1)))
 	
-	#Fix the dates that fall outside the range
+	#Fix the dates that fall outside the range.
 	df[df[,start.col] < xmin & df[,end.col] > xmin, start.col] <- xmin
 	df[df[,end.col] > xmax & df[,start.col] < xmax, end.col] <- xmax
 	if(!missing(events)) {
@@ -189,8 +204,10 @@ timeline <- function(df, events,
 	
 	p <- p +
 		geom_rect(data=df, aes_string(xmin=start.col, xmax=end.col,
-		          ymin='ymin', ymax='ymax', fill=color.col), alpha=.9, 
+		     #     ymin='ymin', ymax='ymax', fill=color.col), alpha=.9, 
+		           ymin='ymin', ymax='ymax'),fill=df[,color.col], alpha=1, 
 				  color=border.color, linetype=border.linetype) +
+				# color=color.col, linetype=border.linetype) +
 		geom_text(data=df, aes_string(y='labelpos', x='labelpos.x', label=label.col),
 		          hjust=text.hjust, 
 		          angle= text.angle, 
