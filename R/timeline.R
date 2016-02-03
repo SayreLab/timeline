@@ -110,10 +110,13 @@ timeline <- function(df, events,
 	
 	# Make some pretty colors
    if(length(color.col)==length(df[,label.col])){
+#      print("color.col is vector")
       rect.colors = color.col
-	}else if(color.col %in% colnames(df)){
+	}else if(color.col %in% colnames(df)&missing(color.by)&missing(color.palette)){
+#	   print("color.col specified in df")
 	   rect.colors=df[,color.col]
 	} else {
+#	   print("color.col unspecified or overwritten")
 	   rect.colors=mapvalues(df[,color.by], 
 	                         from=levels(as.factor(df[,color.by])), 
 	                         to=color.palette)
