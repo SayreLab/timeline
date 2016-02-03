@@ -10,12 +10,13 @@
 #' @param df data for time periods.
 #' @param events data for events (optional).
 #' @param label.col the column name in \code{df} to use for labeling.
-#' @param color.col the column name in \code{df} to use for coloring.
+#' @param color.col the column name in \code{df} to use for coloring, or a vector of individual colors for each entry.
 #' @param group.col the column name in \code{df} to use for grouping.
 #' @param start.col the column name in \code{df} that specifies the start date.
 #' @param end.col the column name in \code{df} that specifies the end date.
-#' @param color.by the column to use for color grouping
-#' @param color.palette the color palette to use
+#' @param color.by the column name to use for color grouping
+#' @param color.palette the color palette to use for color grouping
+#' @param fill.alpha the opacity of the boxes in the timeline.
 #' @param text.size the text size for labels in \code{df}.
 #' @param text.color the text color for labels in \code{df}.
 #' @param text.position the positioning of the text (i.e. left, right, or center).
@@ -53,6 +54,8 @@
 #' @param border.linetype the linetype of the border around each box.
 #' @param limits the limits of the y-axis.
 #' @param time.scale maximum to scale time to.  No scaling if missing.
+#' @param collapse Whether to collapse all bars into one bar, concatenating labels and groups.
+#' @param stagger Whether to stagger text labels into a cascade from top to bottom of bar
 #' @param ... currently unused.
 #' @export
 #' @examples
@@ -67,6 +70,7 @@ timeline <- function(df, events,
 					 color.col = names(df)[5],
 					 color.by = label.col,
 					 color.palette = rainbow(length(levels(as.factor(df[,color.by])))),
+					 fill.alpha = .9,
 					 text.position = c('left','right','center'),
 					 text.size = 4,
 					 text.color = 'black',
@@ -98,16 +102,27 @@ timeline <- function(df, events,
 					 border.linetype=1,
 					 limits,
 			       time.scale,
+					 stagger = FALSE,
+					 collapse = FALSE,
 					 ...
 ) {	
-	p <- ggplot()
+	p <- ggplot() + theme_bw()
 	
 	# Make some pretty colors
-	if(missing(color.col)){
-	   color.col = 5
-	   df[,color.col]=mapvalues(df[,color.by], 
-	                            from=levels(as.factor(df[,color.by])), 
-	                            to=color.palette)
+   if(length(color.col)==length(df[,label.col])){
+      rect.colors = color.col
+	}else if(color.col %in% colnames(df)){
+	   rect.colors=df[,color.col]
+	} else {
+	   rect.colors=mapvalues(df[,color.by], 
+	                         from=levels(as.factor(df[,color.by])), 
+	                         to=color.palette)
+	}
+	
+	# Collapse all timelines into a single line?
+	if(collapse){
+	   df[,label.col] = paste(df[,label.col],df[,group.col])
+	   df[,group.col] = group.col
 	}
 	
 	# Set up events line
@@ -125,7 +140,7 @@ timeline <- function(df, events,
 		event.spots <- 0
 	}
 	
-	# Set up limits if they're not specified
+	# Set up horizontal limits if they're not specified
 	if(missing(limits)) {
 		if(missing(events)) {
 			limits <- range(c(df[,start.col], df[,end.col]), na.rm=TRUE)
@@ -137,8 +152,8 @@ timeline <- function(df, events,
 	}
 	
 	
-	# Set horizontal limits depending on time scaling.
-	if(missing(time.scale)) {
+	# Scale horizontal limits depending on time factor.
+	if(missing(time.scale)|!is.numeric(df[, start.col])|!is.numeric(df[, end.col])) {
 	   xmin <- limits[1]
 	   xmax <- limits[2]
 	} else {
@@ -171,8 +186,15 @@ timeline <- function(df, events,
 		group.labels[which(group.labels$group == groups[i]),]$y <- 
 			ifelse(event.above, 0, event.spots - 1) + i + !event.above
 	}
-	df$labelpos <- (df$ymin + df$ymax) / 2
 	
+	# Place text labels vertically
+	if(stagger) {
+	   df$labelpos <- 1-(seq(1:length(df[,label.col]))-0)/(length(df[,label.col])*1.1)+df$ymin
+	} else {
+   	df$labelpos <- (df$ymin + df$ymax) / 2
+	}
+	
+	# Place text labels horizontally
 	if(text.position[1] == 'right') {
 		if(missing(text.hjust)) {
 			text.hjust <- 1.05
@@ -204,6 +226,7 @@ timeline <- function(df, events,
 	group.labels <- rbind(group.labels, data.frame(group=event.label, x=xmin, 
 							y=ifelse(event.above, ymax + 1, 1)))
 	
+	
 	#Fix the dates that fall outside the range.
 	df[df[,start.col] < xmin & df[,end.col] > xmin, start.col] <- xmin
 	df[df[,end.col] > xmax & df[,start.col] < xmax, end.col] <- xmax
@@ -221,7 +244,7 @@ timeline <- function(df, events,
 	
 	p <- p +
 		geom_rect(data=df, aes_string(xmin=start.col, xmax=end.col,
-		        ymin='ymin', ymax='ymax'),fill=df[,color.col], alpha=.9, 
+		        ymin='ymin', ymax='ymax'),fill=rect.colors, alpha=fill.alpha, 
 				  color=border.color, linetype=border.linetype) +
 		geom_text(data=df, aes_string(y='labelpos', x='labelpos.x', label=label.col),
 		          hjust=text.hjust, 
@@ -229,7 +252,6 @@ timeline <- function(df, events,
 				  size=text.size, 
 				  color=text.color,
 				  alpha=text.alpha, 
-				  angle=text.angle, 
 				  family=text.family, 
 				  fontface=text.fontface,
 				  vjust=text.vjust, 
@@ -297,7 +319,7 @@ timeline <- function(df, events,
 		}
 	}
 	
-	p <- p + geom_hline(yintercept=ifelse(event.above, 0, event.spots), size=1)
+	p <- p + geom_hline(yintercept=ifelse(event.above, 0, event.spots), size=1) 
 	
 	return(p)
 }
