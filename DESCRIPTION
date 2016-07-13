@@ -18,3 +18,4 @@ Collate:
     'timeline.R'
     'timeline-package.R'
     'timelineShinyDemo.R'
+RoxygenNote: 5.0.1

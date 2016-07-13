@@ -24,3 +24,10 @@ NULL
 #' @keywords datasets
 #' @source http://www.preceden.com/
 NULL
+
+
+document.timeline <- function() {
+  library("roxygen2")
+  library("devtools")
+  document()
+}
