@@ -63,266 +63,266 @@
 #' timeline(ww2, ww2.events)
 #' timeline(ww2, ww2.events, event.spots=2, event.label='', event.above=FALSE)
 timeline <- function(df, events,
-					 label.col = names(df)[1],
-					 group.col = names(df)[2],
-					 start.col = names(df)[3],
-					 end.col = names(df)[4],
-					 color.col = names(df)[5],
-					 color.by = label.col,
-					 color.palette = rainbow(length(levels(as.factor(df[,color.by])))),
-					 fill.alpha = .9,
-					 text.position = c('left','right','center'),
-					 text.size = 4,
-					 text.color = 'black',
-					 text.alpha = 1, 
-					 text.angle = 0, 
-					 text.family = 'serif', 
-					 text.fontface = 1,
-					 text.hjust,
-					 text.vjust = 0.5, 
-					 text.lineheight = 1, 
-					 num.label.steps = 5,
-					 event.label.col,
-					 event.col,
-					 event.group.col,
-					 event.spots = 1,
-					 event.label = '',
-					 event.label.method = 1,
-					 event.line = FALSE,
-					 event.text.size = 4,
-					 event.text.color = 'black',
-					 event.text.alpha = 1, 
-					 event.text.angle = 0, 
-					 event.text.family = 'serif', 
-					 event.text.fontface = 1,
-					 event.text.vjust = 0.5, 
-					 event.text.lineheight = 1, 
-					 event.above = TRUE,
-					 border.color='white',
-					 border.linetype=1,
-					 limits,
-			       time.scale,
-					 stagger = FALSE,
-					 collapse = FALSE,
-					 ...
+                     label.col = names(df)[1],
+                     group.col = names(df)[2],
+                     start.col = names(df)[3],
+                     end.col = names(df)[4],
+                     color.col = names(df)[5],
+                     color.by = label.col,
+                     color.palette = rainbow(length(levels(as.factor(df[,color.by])))),
+                     fill.alpha = .9,
+                     text.position = c('left','right','center'),
+                     text.size = 4,
+                     text.color = 'black',
+                     text.alpha = 1, 
+                     text.angle = 0, 
+                     text.family = 'serif', 
+                     text.fontface = 1,
+                     text.hjust,
+                     text.vjust = 0.5, 
+                     text.lineheight = 1, 
+                     num.label.steps = 5,
+                     event.label.col,
+                     event.col,
+                     event.group.col,
+                     event.spots = 1,
+                     event.label = '',
+                     event.label.method = 1,
+                     event.line = FALSE,
+                     event.text.size = 4,
+                     event.text.color = 'black',
+                     event.text.alpha = 1, 
+                     event.text.angle = 0, 
+                     event.text.family = 'serif', 
+                     event.text.fontface = 1,
+                     event.text.vjust = 0.5, 
+                     event.text.lineheight = 1, 
+                     event.above = TRUE,
+                     border.color='white',
+                     border.linetype=1,
+                     limits,
+                     time.scale,
+                     stagger = FALSE,
+                     collapse = FALSE,
+                     ...
 ) {	
-	p <- ggplot() + theme_bw()
-	
-	# Make some pretty colors
-   if(length(color.col)==length(df[,label.col])){
-#      print("color.col is vector")
-      rect.colors = color.col
-	}else if(color.col %in% colnames(df)&missing(color.by)&missing(color.palette)){
-#	   print("color.col specified in df")
-	   rect.colors=df[,color.col]
-	} else {
-#	   print("color.col unspecified or overwritten")
-	   rect.colors=plyr::mapvalues(df[,color.by], 
-	                         from=levels(as.factor(df[,color.by])), 
-	                         to=color.palette)
-	}
-	
-	# Collapse all timelines into a single line?
-	if(collapse){
-	   df[,label.col] = paste(df[,label.col],df[,group.col])
-	   df[,group.col] = group.col
-	}
-	
-	# Set up events line
-	if(!missing(events)) {
-		if(missing(event.label.col)) {
-			event.label.col <- names(events)[1]
-		}
-		if(missing(event.col)) {
-			event.col <- names(events)[2]
-		}
-		if(missing(event.group.col)) {
-			event.group.col <- NULL
-		}
-	} else {
-		event.spots <- 0
-	}
-	
-	# Set up horizontal limits if they're not specified
-	if(missing(limits)) {
-		if(missing(events)) {
-			limits <- range(c(df[,start.col], df[,end.col]), na.rm=TRUE)
-		} else if(missing(df)) {
-			limits <- range(events[,event.col], na.rm=TRUE)
-		} else {
-			limits <- range(c(df[,start.col], df[,end.col], events[,event.col]), na.rm=TRUE)
-		}
-	}
-	
-	
-	# Scale horizontal limits depending on time factor.
-	if(missing(time.scale)|!is.numeric(df[, start.col])|!is.numeric(df[, end.col])) {
-	   xmin <- limits[1]
-	   xmax <- limits[2]
-	} else {
-	   xmin <- 0
-	   xmax <- time.scale
-	   df[, start.col] <- (df[,start.col]-limits[1])*time.scale/limits[2]
-	   df[, end.col] <- (df[,end.col]-limits[1])*time.scale/limits[2]
-	   if(!missing(events)) {
-	      events[,event.col] <- (events[,event.col]-limits[1])*time.scale/limits[2]
-	   }
-	}
-
-	# Grouping and vertical limits
-	groups <- unique(df[,group.col])
-	
-	ymin <- 0
-	ymax <- length(groups)
-	
-	group.labels <- data.frame(group=groups, 
-							   x=rep(xmin, length(groups)), 
-							   y=rep(NA, length(groups)),
-							   stringsAsFactors=FALSE)
-	
-	df$ymin <- df$ymax <- NA
-	for(i in seq_along(groups)) {
-		df[which(df[,group.col] == groups[i]),]$ymin <- 
-			ifelse(event.above, 0, event.spots - 1) + i - event.above
-		df[which(df[,group.col] == groups[i]),]$ymax <- 
-			ifelse(event.above, 0, event.spots - 1) + i + !event.above
-		group.labels[which(group.labels$group == groups[i]),]$y <- 
-			ifelse(event.above, 0, event.spots - 1) + i + !event.above
-	}
-	
-	# Place text labels vertically
-	if(stagger) {
-	   df$labelpos <- 1-(seq(1:length(df[,label.col]))-0)/(length(df[,label.col])*1.1)+df$ymin
-	} else {
-   	df$labelpos <- (df$ymin + df$ymax) / 2
-	}
-	
-	# Place text labels horizontally
-	if(text.position[1] == 'right') {
-		if(missing(text.hjust)) {
-			text.hjust <- 1.05
-		}
-		df$labelpos.x <- df[,end.col]
-	} else if(text.position[1] == 'center') {
-		if(missing(text.hjust)) {
-			text.hjust <- .5
-		}
-		df$labelpos.x <- df[,start.col] + as.integer(df[,end.col] - df[,start.col]) / 2
-	} else {
-		if(missing(text.hjust)) {
-			text.hjust <- -0.05
-		}
-		df$labelpos.x <- df[,start.col]
-	}
-	
-	if(!missing(events)) {
-		if(num.label.steps > 1) {
-			steps <- rev(seq(0, event.spots, by=event.spots/
-							 	(num.label.steps + 1))[2:(num.label.steps+1)])
-			events$y <- ifelse(event.above, ymax, 0) + 
-				rep(steps, ceiling(nrow(events)/length(steps)))[1:nrow(events)]
-		} else {
-			events$y <- ifelse(event.above, ymax, 0)
-		}
-	}
-	
-	group.labels <- rbind(group.labels, data.frame(group=event.label, x=xmin, 
-							y=ifelse(event.above, ymax + 1, 1)))
-	
-	
-	#Fix the dates that fall outside the range.
-	df[df[,start.col] < xmin & df[,end.col] > xmin, start.col] <- xmin
-	df[df[,end.col] > xmax & df[,start.col] < xmax, end.col] <- xmax
-	if(!missing(events)) {
-		events <- events[events[,event.col] >= xmin & events[,event.col] <= xmax,]
-		if(event.line) {
-			p <- p + geom_segment(data=events, 
-				aes_string(x=event.col, xend=event.col, yend='y'), 
-				y=ifelse(event.above, ymin, event.spots), alpha=1)
-		}
-		
-	}
-	
-
-	
-	p <- p +
-		geom_rect(data=df, aes_string(xmin=start.col, xmax=end.col,
-		        ymin='ymin', ymax='ymax'),fill=rect.colors, alpha=fill.alpha, 
-				  color=border.color, linetype=border.linetype) +
-		geom_text(data=df, aes_string(y='labelpos', x='labelpos.x', label=label.col),
-		          hjust=text.hjust, 
-		          angle= text.angle, 
-				  size=text.size, 
-				  color=text.color,
-				  alpha=text.alpha, 
-				  family=text.family, 
-				  fontface=text.fontface,
-				  vjust=text.vjust, 
-				  lineheight=text.lineheight) +
-		theme(legend.position='none',
-			  axis.ticks.y=element_blank()) + 
-		xlab('') + ylab('') +
-		xlim(c(xmin, xmax)) +
-		scale_y_continuous(breaks=group.labels$y-0.5, 
-						   labels=group.labels$group,
-						   limits=c(ymin, ymax + event.spots),
-						   minor_breaks=c())
-	if(!missing(events)) {
-		if(missing(event.group.col)) {
-			events$Group <- 'Group'
-			event.group.col <- 'Group'
-		}
-		if(event.label.method == 1) {
-			p <- p +
-				geom_point(data=events, aes_string(x=event.col, y='y',
-				     color=event.group.col)) +
-				geom_text(data=events, aes_string(x=event.col, y='y', 
-				     label=event.label.col, color=event.group.col), hjust=-0.05,
-				     size=event.text.size,
-					 color=event.text.color,
-					 alpha=event.text.alpha, 
-					 angle=event.text.angle, 
-					 family=event.text.family, 
-					 fontface=event.text.fontface,
-					 vjust=event.text.vjust, 
-					 lineheight=event.text.lineheight)
-		} else if(event.label.method == 2) {
-			p <- p +
-				geom_point(data=events, aes_string(x=event.col, y='y', color=event.group.col)) +
-				geom_text(data=events, aes_string(x=event.col, y='y', label=event.label.col,
-				     color=event.group.col), angle=45, 
-					 vjust=ifelse(event.above, -0.15, 0),
-					 hjust=ifelse(event.above, -0.15, 0),
-				     size=event.text.size,
-					 color=event.text.color,
-					 alpha=event.text.alpha, 
-					 angle=event.text.angle, 
-					 family=event.text.family, 
-					 fontface=event.text.fontface,
-					 vjust=event.text.vjust, 
-					 lineheight=event.text.lineheight)
-		} else if(event.label.method == 3) {
-			p <- p +
-				geom_point(data=events, aes_string(x=event.col, y='y', color=event.group.col)) +
-				geom_text(data=events, aes_string(x=event.col, label=event.label.col,
-					 color=event.group.col, y='y'), angle=90, 
-					 hjust=ifelse(event.above, -0.15, 0.15), 
-					 vjust=ifelse(event.above, 0, 0),
-					 size=event.text.size,
-					 color=event.text.color,
-					 alpha=event.text.alpha, 
-					 angle=event.text.angle, 
-					 family=event.text.family, 
-					 fontface=event.text.fontface,
-					 vjust=event.text.vjust, 
-					 lineheight=event.text.lineheight)
-		}
-		if(length(unique(events[,event.group.col])) == 1) {
-			p <- p + scale_color_grey()
-		}
-	}
-	
-	p <- p + geom_hline(yintercept=ifelse(event.above, 0, event.spots), size=1) 
-	
-	return(p)
+  p <- ggplot() + theme_bw()
+  
+  # Make some pretty colors
+  if(length(color.col)==length(df[,label.col])){
+    #      print("color.col is vector")
+    rect.colors = color.col
+  }else if(color.col %in% colnames(df)&missing(color.by)&missing(color.palette)){
+    #	   print("color.col specified in df")
+    rect.colors=df[,color.col]
+  } else {
+    #	   print("color.col unspecified or overwritten")
+    rect.colors=plyr::mapvalues(df[,color.by], 
+                                from=levels(as.factor(df[,color.by])), 
+                                to=color.palette)
+  }
+  
+  # Collapse all timelines into a single line?
+  if(collapse){
+    df[,label.col] = paste(df[,label.col],df[,group.col])
+    df[,group.col] = group.col
+  }
+  
+  # Set up events line
+  if(!missing(events)) {
+    if(missing(event.label.col)) {
+      event.label.col <- names(events)[1]
+    }
+    if(missing(event.col)) {
+      event.col <- names(events)[2]
+    }
+    if(missing(event.group.col)) {
+      event.group.col <- NULL
+    }
+  } else {
+    event.spots <- 0
+  }
+  
+  # Set up horizontal limits if they're not specified
+  if(missing(limits)) {
+    if(missing(events)) {
+      limits <- range(c(df[,start.col], df[,end.col]), na.rm=TRUE)
+    } else if(missing(df)) {
+      limits <- range(events[,event.col], na.rm=TRUE)
+    } else {
+      limits <- range(c(df[,start.col], df[,end.col], events[,event.col]), na.rm=TRUE)
+    }
+  }
+  
+  
+  # Scale horizontal limits depending on time factor.
+  if(missing(time.scale)|!is.numeric(df[, start.col])|!is.numeric(df[, end.col])) {
+    xmin <- limits[1]
+    xmax <- limits[2]
+  } else {
+    xmin <- 0
+    xmax <- time.scale
+    df[, start.col] <- (df[,start.col]-limits[1])*time.scale/limits[2]
+    df[, end.col] <- (df[,end.col]-limits[1])*time.scale/limits[2]
+    if(!missing(events)) {
+      events[,event.col] <- (events[,event.col]-limits[1])*time.scale/limits[2]
+    }
+  }
+  
+  # Grouping and vertical limits
+  groups <- unique(df[,group.col])
+  
+  ymin <- 0
+  ymax <- length(groups)
+  
+  group.labels <- data.frame(group=groups, 
+                             x=rep(xmin, length(groups)), 
+                             y=rep(NA, length(groups)),
+                             stringsAsFactors=FALSE)
+  
+  df$ymin <- df$ymax <- NA
+  for(i in seq_along(groups)) {
+    df[which(df[,group.col] == groups[i]),]$ymin <- 
+      ifelse(event.above, 0, event.spots - 1) + i - event.above
+    df[which(df[,group.col] == groups[i]),]$ymax <- 
+      ifelse(event.above, 0, event.spots - 1) + i + !event.above
+    group.labels[which(group.labels$group == groups[i]),]$y <- 
+      ifelse(event.above, 0, event.spots - 1) + i + !event.above
+  }
+  
+  # Place text labels vertically
+  if(stagger) {
+    df$labelpos <- 1-(seq(1:length(df[,label.col]))-0)/(length(df[,label.col])*1.1)+df$ymin
+  } else {
+    df$labelpos <- (df$ymin + df$ymax) / 2
+  }
+  
+  # Place text labels horizontally
+  if(text.position[1] == 'right') {
+    if(missing(text.hjust)) {
+      text.hjust <- 1.05
+    }
+    df$labelpos.x <- df[,end.col]
+  } else if(text.position[1] == 'center') {
+    if(missing(text.hjust)) {
+      text.hjust <- .5
+    }
+    df$labelpos.x <- df[,start.col] + as.integer(df[,end.col] - df[,start.col]) / 2
+  } else {
+    if(missing(text.hjust)) {
+      text.hjust <- -0.05
+    }
+    df$labelpos.x <- df[,start.col]
+  }
+  
+  if(!missing(events)) {
+    if(num.label.steps > 1) {
+      steps <- rev(seq(0, event.spots, by=event.spots/
+                         (num.label.steps + 1))[2:(num.label.steps+1)])
+      events$y <- ifelse(event.above, ymax, 0) + 
+        rep(steps, ceiling(nrow(events)/length(steps)))[1:nrow(events)]
+    } else {
+      events$y <- ifelse(event.above, ymax, 0)
+    }
+  }
+  
+  group.labels <- rbind(group.labels, data.frame(group=event.label, x=xmin, 
+                                                 y=ifelse(event.above, ymax + 1, 1)))
+  
+  
+  #Fix the dates that fall outside the range.
+  df[df[,start.col] < xmin & df[,end.col] > xmin, start.col] <- xmin
+  df[df[,end.col] > xmax & df[,start.col] < xmax, end.col] <- xmax
+  if(!missing(events)) {
+    events <- events[events[,event.col] >= xmin & events[,event.col] <= xmax,]
+    if(event.line) {
+      p <- p + geom_segment(data=events, 
+                            aes_string(x=event.col, xend=event.col, yend='y'), 
+                            y=ifelse(event.above, ymin, event.spots), alpha=1)
+    }
+    
+  }
+  
+  
+  
+  p <- p +
+    geom_rect(data=df, aes_string(xmin=start.col, xmax=end.col,
+                                  ymin='ymin', ymax='ymax'),fill=rect.colors, alpha=fill.alpha, 
+              color=border.color, linetype=border.linetype) +
+    geom_text(data=df, aes_string(y='labelpos', x='labelpos.x', label=label.col),
+              hjust=text.hjust, 
+              angle= text.angle, 
+              size=text.size, 
+              color=text.color,
+              alpha=text.alpha, 
+              family=text.family, 
+              fontface=text.fontface,
+              vjust=text.vjust, 
+              lineheight=text.lineheight) +
+    theme(legend.position='none',
+          axis.ticks.y=element_blank()) + 
+    xlab('') + ylab('') +
+    xlim(c(xmin, xmax)) +
+    scale_y_continuous(breaks=group.labels$y-0.5, 
+                       labels=group.labels$group,
+                       limits=c(ymin, ymax + event.spots),
+                       minor_breaks=c())
+  if(!missing(events)) {
+    if(missing(event.group.col)) {
+      events$Group <- 'Group'
+      event.group.col <- 'Group'
+    }
+    if(event.label.method == 1) {
+      p <- p +
+        geom_point(data=events, aes_string(x=event.col, y='y',
+                                           color=event.group.col)) +
+        geom_text(data=events, aes_string(x=event.col, y='y', 
+                                          label=event.label.col, color=event.group.col), hjust=-0.05,
+                  size=event.text.size,
+                  color=event.text.color,
+                  alpha=event.text.alpha, 
+                  angle=event.text.angle, 
+                  family=event.text.family, 
+                  fontface=event.text.fontface,
+                  vjust=event.text.vjust, 
+                  lineheight=event.text.lineheight)
+    } else if(event.label.method == 2) {
+      p <- p +
+        geom_point(data=events, aes_string(x=event.col, y='y', color=event.group.col)) +
+        geom_text(data=events, aes_string(x=event.col, y='y', label=event.label.col,
+                                          color=event.group.col), angle=45, 
+                  vjust=ifelse(event.above, -0.15, 0),
+                  hjust=ifelse(event.above, -0.15, 0),
+                  size=event.text.size,
+                  color=event.text.color,
+                  alpha=event.text.alpha, 
+                  angle=event.text.angle, 
+                  family=event.text.family, 
+                  fontface=event.text.fontface,
+                  vjust=event.text.vjust, 
+                  lineheight=event.text.lineheight)
+    } else if(event.label.method == 3) {
+      p <- p +
+        geom_point(data=events, aes_string(x=event.col, y='y', color=event.group.col)) +
+        geom_text(data=events, aes_string(x=event.col, label=event.label.col,
+                                          color=event.group.col, y='y'), angle=90, 
+                  hjust=ifelse(event.above, -0.15, 0.15), 
+                  vjust=ifelse(event.above, 0, 0),
+                  size=event.text.size,
+                  color=event.text.color,
+                  alpha=event.text.alpha, 
+                  angle=event.text.angle, 
+                  family=event.text.family, 
+                  fontface=event.text.fontface,
+                  vjust=event.text.vjust, 
+                  lineheight=event.text.lineheight)
+    }
+    if(length(unique(events[,event.group.col])) == 1) {
+      p <- p + scale_color_grey()
+    }
+  }
+  
+  p <- p + geom_hline(yintercept=ifelse(event.above, 0, event.spots), size=1) 
+  
+  return(p)
 }
