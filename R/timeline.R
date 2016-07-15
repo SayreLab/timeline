@@ -117,7 +117,7 @@ timeline <- function(df, events,
 	   rect.colors=df[,color.col]
 	} else {
 #	   print("color.col unspecified or overwritten")
-	   rect.colors=mapvalues(df[,color.by], 
+	   rect.colors=plyr::mapvalues(df[,color.by], 
 	                         from=levels(as.factor(df[,color.by])), 
 	                         to=color.palette)
 	}
