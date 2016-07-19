@@ -69,7 +69,7 @@ timeline <- function(df, events,
                      end.col = names(df)[4],
                      color.col = names(df)[5],
                      color.by = label.col,
-                     color.palette = rainbow(length(levels(as.factor(df[,color.by])))),
+                     color.palette = grDevices::rainbow(length(levels(as.factor(df[,color.by])))),
                      fill.alpha = .9,
                      text.position = c('left','right','center'),
                      text.size = 4,
@@ -106,7 +106,7 @@ timeline <- function(df, events,
                      collapse = FALSE,
                      ...
 ) {	
-  p <- ggplot() + theme_bw()
+  p <- ggplot2::ggplot() + ggplot2::theme_bw()
   
   # Make some pretty colors
   if(length(color.col)==length(df[,label.col])){
@@ -236,8 +236,8 @@ timeline <- function(df, events,
   if(!missing(events)) {
     events <- events[events[,event.col] >= xmin & events[,event.col] <= xmax,]
     if(event.line) {
-      p <- p + geom_segment(data=events, 
-                            aes_string(x=event.col, xend=event.col, yend='y'), 
+      p <- p + ggplot2::geom_segment(data=events, 
+                                     ggplot2::aes_string(x=event.col, xend=event.col, yend='y'), 
                             y=ifelse(event.above, ymin, event.spots), alpha=1)
     }
     
@@ -246,10 +246,10 @@ timeline <- function(df, events,
   
   
   p <- p +
-    geom_rect(data=df, aes_string(xmin=start.col, xmax=end.col,
+    ggplot2::geom_rect(data=df, ggplot2::aes_string(xmin=start.col, xmax=end.col,
                                   ymin='ymin', ymax='ymax'),fill=rect.colors, alpha=fill.alpha, 
               color=border.color, linetype=border.linetype) +
-    geom_text(data=df, aes_string(y='labelpos', x='labelpos.x', label=label.col),
+    ggplot2::geom_text(data=df, ggplot2::aes_string(y='labelpos', x='labelpos.x', label=label.col),
               hjust=text.hjust, 
               angle= text.angle, 
               size=text.size, 
@@ -259,11 +259,11 @@ timeline <- function(df, events,
               fontface=text.fontface,
               vjust=text.vjust, 
               lineheight=text.lineheight) +
-    theme(legend.position='none',
-          axis.ticks.y=element_blank()) + 
-    xlab('') + ylab('') +
-    xlim(c(xmin, xmax)) +
-    scale_y_continuous(breaks=group.labels$y-0.5, 
+    ggplot2::theme(legend.position='none',
+          axis.ticks.y=ggplot2::element_blank()) + 
+    ggplot2::xlab('') + ggplot2::ylab('') +
+    ggplot2::xlim(c(xmin, xmax)) +
+    ggplot2::scale_y_continuous(breaks=group.labels$y-0.5, 
                        labels=group.labels$group,
                        limits=c(ymin, ymax + event.spots),
                        minor_breaks=c())
@@ -274,9 +274,9 @@ timeline <- function(df, events,
     }
     if(event.label.method == 1) {
       p <- p +
-        geom_point(data=events, aes_string(x=event.col, y='y',
+        ggplot2::geom_point(data=events, ggplot2::aes_string(x=event.col, y='y',
                                            color=event.group.col)) +
-        geom_text(data=events, aes_string(x=event.col, y='y', 
+        ggplot2::geom_text(data=events, ggplot2::aes_string(x=event.col, y='y', 
                                           label=event.label.col, color=event.group.col), hjust=-0.05,
                   size=event.text.size,
                   color=event.text.color,
@@ -288,8 +288,8 @@ timeline <- function(df, events,
                   lineheight=event.text.lineheight)
     } else if(event.label.method == 2) {
       p <- p +
-        geom_point(data=events, aes_string(x=event.col, y='y', color=event.group.col)) +
-        geom_text(data=events, aes_string(x=event.col, y='y', label=event.label.col,
+        ggplot2::geom_point(data=events, ggplot2::aes_string(x=event.col, y='y', color=event.group.col)) +
+        ggplot2::geom_text(data=events, ggplot2::aes_string(x=event.col, y='y', label=event.label.col,
                                           color=event.group.col), angle=45, 
                   vjust=ifelse(event.above, -0.15, 0),
                   hjust=ifelse(event.above, -0.15, 0),
@@ -303,8 +303,8 @@ timeline <- function(df, events,
                   lineheight=event.text.lineheight)
     } else if(event.label.method == 3) {
       p <- p +
-        geom_point(data=events, aes_string(x=event.col, y='y', color=event.group.col)) +
-        geom_text(data=events, aes_string(x=event.col, label=event.label.col,
+        ggplot2::geom_point(data=events, ggplot2::aes_string(x=event.col, y='y', color=event.group.col)) +
+        ggplot2::geom_text(data=events, ggplot2::aes_string(x=event.col, label=event.label.col,
                                           color=event.group.col, y='y'), angle=90, 
                   hjust=ifelse(event.above, -0.15, 0.15), 
                   vjust=ifelse(event.above, 0, 0),
@@ -322,7 +322,7 @@ timeline <- function(df, events,
     }
   }
   
-  p <- p + geom_hline(yintercept=ifelse(event.above, 0, event.spots), size=1) 
+  p <- p + ggplot2::geom_hline(yintercept=ifelse(event.above, 0, event.spots), size=1) 
   
   return(p)
 }
