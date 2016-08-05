@@ -62,6 +62,10 @@
 #' data(ww2)
 #' timeline(ww2, ww2.events)
 #' timeline(ww2, ww2.events, event.spots=2, event.label='', event.above=FALSE)
+
+library(ggplot2)
+library(plyr)
+
 timeline <- function(df, events,
 					 label.col = names(df)[1],
 					 group.col = names(df)[2],
