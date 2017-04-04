@@ -56,6 +56,7 @@
 #' @param time.scale maximum to scale time to.  No scaling if missing.
 #' @param collapse Whether to collapse all bars into one bar, concatenating labels and groups.
 #' @param stagger Whether to stagger text labels into a cascade from top to bottom of bar
+#' @param text.size.axis What size the axis text labels are.  Default=14.
 #' @param ... currently unused.
 #' @export
 #' @examples
@@ -108,6 +109,7 @@ timeline <- function(df, events,
                      time.scale,
                      stagger = FALSE,
                      collapse = FALSE,
+                     text.size.axis = 14,
                      ...
 ) {	
   p <- ggplot2::ggplot() + ggplot2::theme_bw()
@@ -264,13 +266,19 @@ timeline <- function(df, events,
               vjust=text.vjust, 
               lineheight=text.lineheight) +
     ggplot2::theme(legend.position='none',
-          axis.ticks.y=ggplot2::element_blank()) + 
+          axis.ticks.y=ggplot2::element_blank(),
+          axis.text=element_text(size=text.size.axis)) + 
     ggplot2::xlab('') + ggplot2::ylab('') +
     ggplot2::xlim(c(xmin, xmax)) +
-    ggplot2::scale_y_continuous(breaks=group.labels$y-0.5, 
-                       labels=group.labels$group,
-                       limits=c(ymin, ymax + event.spots),
-                       minor_breaks=c())
+    ggplot2::scale_y_continuous(
+                     breaks=group.labels$y-0.5, 
+                     labels=group.labels$group,
+                     limits=c(ymin, ymax + event.spots),
+                     minor_breaks=c()
+                  
+            
+       
+                     )
   if(!missing(events)) {
     if(missing(event.group.col)) {
       events$Group <- 'Group'
