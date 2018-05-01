@@ -1,0 +1,60 @@
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Workspace loaded from ~/Desktop/.RData]
+
+# Need ggplot2 to run timeline!
+> library("ggplot2", lib.loc="/Library/Frameworks/R.framework/Versions/3.2/Resources/library")
+
+# data frame of interest: dza
+> dza = read.csv("~/Desktop/data.csv", header=TRUE)
+
+# if your df is formatted as expected, the default plot.
+> timeline(dza)
+
+# start.col: where the start times are.  Must be integers.
+# end.col: where the end times are.  Must be integers.
+> timeline(dza, start.col = "Start", end.col = "End")
+
+# color.by="Phase": color plot by specific column, in this case "Phase".
+> timeline(dza, color.by="Phase")
+
+# group.col = "Name": each row on the plot is a unique entry in the Name column
+> timeline(dza, group.col="Name", color.by="Phase", color.palette = rainbow(3))
+
+# color.palette = rainbow(5): use these colors instead of the defaults
+> timeline(dza, color.by="Name", color.palette = rainbow(5))
+> timeline(dza, color.by="Name", color.palette = c("red","yellow","green","purple","white"))
+
+# text.alpha = 0: suppress data labels in the graph
+# text.alpha = 0.5: make data labels semitransparent.
+> timeline(dza, text.alpha = 0)
+> timeline(dza, text.alpha = .5)
+
+# collapse: collapse all rows into a single row.
+> timeline(dza, collapse=TRUE)
+
+# stagger: stagger the text on the plot so that it falls from the top of each bar to the bottom.
+# possible, but silly, to use this in combination with text.alpha = 0
+> timeline(dza, stagger=TRUE)
+
+# time.scale: takes an integer, rescales the bottom axis from 0 to that number.  Useful for percents.
+> timeline(dza, time.scale=100,)
+
+# only use the data where the Name column does not contain "Pause"
+> timeline(dza[dza$Name!="Pause",])
+
+# Of course, you can combine any of these together:
+> timeline(dza[dza$Name!="Pause",], color.by = "Name", group.col = "Phase", color.palette = rainbow(5),text.alpha = 0, collapse=TRUE, time.scale = 100)
